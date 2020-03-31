@@ -5,8 +5,11 @@
   #?(:cljs (:require-macros [wayra.core :refer [mdo]])))
 
 
-#?(:clj
-   (defmacro mdo [& args] `(macros/mdo ~@args)))
+#?(:clj (defmacro mdo [& args] `(macros/mdo ~@args)))
+#?(:clj (defmacro defm [& args] `(macros/defm ~@args)))
+#?(:clj (defmacro defnm [& args] `(macros/defnm ~@args)))
+#?(:clj (defmacro fnm [& args] `(macros/fnm ~@args)))
+#?(:clj (defmacro whenm [& args] `(macros/whenm ~@args)))
 (def pure impl/pure)
 (def fail impl/fail)
 (def ask (mdo-raw state-e-monad (-> raw-get >>= :reader)))

@@ -1,6 +1,6 @@
 (ns wayra.macros
   (:require [wayra.impl :refer [mdo-raw >>= state-e-monad pure]])
-  #?(:cljs (:require-macros [wayra.macros :refer [letrec mdo]])))
+  #?(:cljs (:require-macros [wayra.macros :refer [letrec mdo fnm defnm defm whenm]])))
 
 
 #?(:clj
@@ -56,3 +56,36 @@
                      :else `(do (>>= ~curr)
                                 ~(make-fdo statements)))))]
          `(mdo-raw state-e-monad ~(make-fdo with-guard))))))
+
+(defn add-fdo [sym]
+  (fn [& statements]
+    (let [fn? (= sym 'fn)
+          defn? (= sym 'defn)
+          n? (or defn? fn?)
+          docstring? (and (not fn?) (string? (nth statements 1)))
+          take-n (+ 1 (if docstring? 1 0) (if fn? -1 0))
+          untouched (take take-n statements)
+          add-to-fn (fn [[args & statements]]
+                      `(~args (mdo ~@statements)))
+          rest (drop take-n statements)
+          updated (cond
+                    (and n? (vector? (first rest))) (add-to-fn rest)
+                    n? (map add-to-fn rest)
+                    :else `((mdo ~@rest)))]
+      `(~sym ~@untouched ~@updated))))
+
+#?(:clj
+   (defmacro fnm [& statements]
+     (apply (add-fdo 'fn) statements)))
+
+#?(:clj
+   (defmacro defm [& statements]
+     (apply (add-fdo 'def) statements)))
+
+#?(:clj
+   (defmacro defnm [& statements]
+     (apply (add-fdo 'defn) statements)))
+
+#?(:clj
+   (defmacro whenm [bool & statements]
+     `(if ~bool (fdo ~@statements) (pure nil))))
