@@ -15,7 +15,6 @@
 (defnm gets-test [a]
   b <- (gets inc)
   (pure (+ a b)))
-(defnm put-test [v] (put v))
 
 (defn get-result [r s m]
   (:result ((exec r s) m)))
@@ -31,7 +30,17 @@
   (testing "asks" (is (= (get-result 3 6 (asks-test 9)) 13)))
   (testing "get" (is (= (get-result 3 6 (get-test 9)) 15)))
   (testing "gets" (is (= (get-result 3 6 (gets-test 9)) 16)))
-  (testing "put" (is (= (get-state 3 6 (put-test 9)) 9)))
+  (testing "put" (is (= (get-state 3 6 (put 9)) 9)))
   (testing "modify" (is (= (get-state 3 6 (modify inc)) 7)))
-  (testing "tell" (is (= (get-writer 3 6 (tell 1)) '(1))))
-  (testing "fail" (is (= (get-error 3 6 (fail "x_x")) "x_x"))))
+  (testing "tell" (is (= (get-writer 3 6 (mdo (tell '(1)) (tell '(2)))) '(1 2))))
+  (testing "no tell" (is (= (get-writer 3 6 (put 1)) nil)))
+  (testing "fail" (is (= (get-error 3 6 (fail "x_x")) "x_x")))
+  (testing "no fail" (is (= (get-error 3 6 (put 1)) nil))))
+
+(deftest mappend-types
+  (testing "vector" (is (= (mappend [1 2] [3 4]) [1 2 3 4])))
+  (testing "list" (is (= (mappend '(1 2) '(3 4)) '(1 2 3 4))))
+  (testing "hashset" (is (= (mappend #{1 2} #{3 4}) #{1 2 3 4})))
+  (testing "hashmap" (is (= (mappend {:v [1] :l '(1 2)}
+                                     {:v [2] :l '(3) :s #{1 2}})
+                            {:v [1 2] :l '(1 2 3) :s #{1 2}}))))
