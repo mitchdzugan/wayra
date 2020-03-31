@@ -32,15 +32,15 @@
   (testing "gets" (is (= (get-result 3 6 (gets-test 9)) 16)))
   (testing "put" (is (= (get-state 3 6 (put 9)) 9)))
   (testing "modify" (is (= (get-state 3 6 (modify inc)) 7)))
-  (testing "tell" (is (= (get-writer 3 6 (mdo (tell '(1)) (tell '(2)))) '(1 2))))
+  (testing "tell" (is (= (get-writer 3 6 (mdo (tell 1) (tell 2))) '(2 1))))
   (testing "no tell" (is (= (get-writer 3 6 (put 1)) nil)))
   (testing "fail" (is (= (get-error 3 6 (fail "x_x")) "x_x")))
   (testing "no fail" (is (= (get-error 3 6 (put 1)) nil))))
 
 (deftest mappend-types
-  (testing "vector" (is (= (mappend [1 2] [3 4]) [1 2 3 4])))
-  (testing "list" (is (= (mappend '(1 2) '(3 4)) '(1 2 3 4))))
-  (testing "hashset" (is (= (mappend #{1 2} #{3 4}) #{1 2 3 4})))
-  (testing "hashmap" (is (= (mappend {:v [1] :l '(1 2)}
-                                     {:v [2] :l '(3) :s #{1 2}})
-                            {:v [1 2] :l '(1 2 3) :s #{1 2}}))))
+  (testing "vector" (is (= (mappend [1 2] 3) [1 2 3])))
+  (testing "list" (is (= (mappend '(2 1) 3)) '(3 2 1))))
+  (testing "hashset" (is (= (mappend #{1 2} 3) #{1 2 3})))
+  (testing "hashmap" (is (= (mappend {:v [1] :s #{1 2}}
+                                     {:v 2 :l 1 :s 3})
+                            {:v [1 2] :l '(1) :s #{1 2 3}})))

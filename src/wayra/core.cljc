@@ -18,10 +18,9 @@
 (defn asks [f] (mdo-raw state-e-monad (-> ask >>= f)))
 (defn tell [w]
   (mdo-raw state-e-monad
-           (let [{:keys [writer] :as raw-state} (>>= raw-get)
-                 mappended (if (not writer) w
-                               (monoid/mappend writer w))]
-             (>>= (raw-set (assoc raw-state :writer mappended))))))
+           (let [{:keys [writer] :as raw-state} (>>= raw-get)]
+             (>>= (raw-set (assoc raw-state :writer
+                                  (monoid/mappend writer w)))))))
 (def get (mdo-raw state-e-monad (-> raw-get >>= :state)))
 (defn gets [f] (mdo-raw state-e-monad (-> get >>= f)))
 (defn put [s]
