@@ -29,7 +29,7 @@
 
 (defnm abuse-macro [n]
   (= 0 n) --> (pure 1)
-  (whenm (< n 0)
+  (whenm (<= n 0)
          (tell "was negative"))
   (pure (* n n)))
 
