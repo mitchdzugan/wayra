@@ -8,9 +8,7 @@
 ```
 
 **wayra** [wajɾa] *(Quechuan)* • noun
-> air
-> 
-> the ether that surrounds us
+> air • the ether that surrounds us
 > 
 > without you, I am lifeless
 
