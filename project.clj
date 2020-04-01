@@ -1,6 +1,6 @@
 (defproject wayra "0.0.5"
   :description "FIXME: write description"
-  :url "https://github.com/Mitch Dzugan/wayra"
+  :url "https://github.com/mitchdzugan/wayra"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.10.1"]
