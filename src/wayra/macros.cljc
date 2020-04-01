@@ -88,4 +88,4 @@
 
 #?(:clj
    (defmacro whenm [bool & statements]
-     `(if ~bool (fdo ~@statements) (pure nil))))
+     `(if ~bool (mdo ~@statements) (pure nil))))
