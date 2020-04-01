@@ -6,7 +6,7 @@
 A Clojure library designed to ... well, that part is up to you.
 
 ```clj
-[wayra "0.0.5"]
+[wayra "0.0.6"]
 ```
 
 ## Usage
