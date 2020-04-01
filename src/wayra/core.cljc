@@ -31,8 +31,7 @@
   (mdo-raw state-e-monad
            (let [{:keys [state] :as raw-state} (>>= raw-get)]
              (>>= (raw-set (assoc raw-state :state (f state)))))))
-(defn exec [reader initial-state]
-  (fn [m]
-    (raw-exec m {:reader reader
-                 :state initial-state
-                 :writer nil})))
+(defn exec [{:keys [reader init-state init-writer]} m]
+  (raw-exec m {:reader reader
+               :state init-state
+               :writer init-writer}))

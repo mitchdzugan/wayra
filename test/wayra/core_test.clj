@@ -17,13 +17,13 @@
   (pure (+ a b)))
 
 (defn get-result [r s m]
-  (:result ((exec r s) m)))
+  (:result (exec {:reader r :init-state s} m)))
 (defn get-error [r s m]
-  (:error ((exec r s) m)))
+  (:error (exec {:reader r :init-state s} m)))
 (defn get-state [r s m]
-  (:state ((exec r s) m)))
+  (:state (exec {:reader r :init-state s} m)))
 (defn get-writer [r s m]
-  (:writer ((exec r s) m)))
+  (:writer (exec {:reader r :init-state s} m)))
 
 (deftest core-api
   (testing "ask" (is (= (get-result 3 6 (ask-test 9)) 12)))
