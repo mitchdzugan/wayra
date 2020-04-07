@@ -31,7 +31,20 @@
 
 #?(:clj
    (defmacro mdo [& statements]
-     (let [statements (remove #(= 'let %) statements)
+     (let [statements (->> statements
+                           (reduce
+                            (fn [{:keys [prev-let? code]} curr]
+                              (cond
+                                (= 'let curr) {:prev-let? true
+                                               :code code}
+                                (and (not prev-let?)
+                                     (vector? curr)) {:prev-let? false
+                                                      :code (conj code
+                                                                  `(pure (do ~@curr)))}
+                                :else {:prev-let? false
+                                       :code (conj code curr)}))
+                            {:prev-let? false :code []})
+                           :code)
            [standard guarded] (split-with #(not (= % '-->)) statements)
            needs-guard? (> (count guarded) 1)
            guard-point (-> standard count dec)

@@ -5,7 +5,7 @@
 
 (defnm ask-test [a]
   b <- ask
-  (pure (+ a b)))
+  [(+ a b)])
 (def asks-test
   (fnm [a]
        b <- (asks inc)
@@ -15,7 +15,7 @@
   (pure (+ a b)))
 (defnm gets-test [a]
   b <- (gets inc)
-  (pure (+ a b)))
+  [(+ a b)])
 (defm put-test (put 9))
 
 (defn get-result [r s m]
