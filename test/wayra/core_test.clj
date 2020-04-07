@@ -13,7 +13,9 @@
 (defnm get-test [a]
   b <- get
   (pure (+ a b)))
-(defnm gets-test [a]
+(defnm gets-test
+  "Test docstrings."
+  [a]
   b <- (gets inc)
   [(+ a b)])
 (defm put-test (put 9))
@@ -47,7 +49,8 @@
   (testing "modify" (is (= (get-state 3 6 (modify inc)) 7)))
   (testing "tell" (is (= (get-writer 3 6 (mdo (tell 1) (tell 2))) '(2 1))))
   (testing "no tell" (is (= (get-writer 3 6 (put 1)) nil)))
-  (testing "fail" (is (= (get-error 3 6 (fail "x_x")) "x_x")))
+  (testing "fail" (is (= (get-error 3 6 (mdo (fail "x_x") (put 9))) "x_x")))
+  (testing "fails" (is (= (get-state 3 6 (mdo (fail "x_x") (put 9))) 6)))
   (testing "no fail" (is (= (get-error 3 6 (put 1)) nil))))
 
 (deftest mappend-types
