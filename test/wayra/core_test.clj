@@ -10,9 +10,13 @@
   (fnm [a]
        b <- (asks inc)
        (pure (+ a b))))
-(defnm get-test [a]
-  b <- get
-  (pure (+ a b)))
+(defnm get-test
+  ([a]
+   b <- get
+   (pure (+ a b)))
+  ([a c]
+   b <- get
+   (pure (+ a b c))))
 (defnm gets-test
   "Test docstrings."
   [a]
@@ -44,6 +48,7 @@
   (testing "ask" (is (= (get-result 3 6 (ask-test 9)) 12)))
   (testing "asks" (is (= (get-result 3 6 (asks-test 9)) 13)))
   (testing "get" (is (= (get-result 3 6 (get-test 9)) 15)))
+  (testing "get" (is (= (get-result 3 6 (get-test 9 5)) 20)))
   (testing "gets" (is (= (get-result 3 6 (gets-test 9)) 16)))
   (testing "put" (is (= (get-state 3 6 put-test) 9)))
   (testing "modify" (is (= (get-state 3 6 (modify inc)) 7)))
