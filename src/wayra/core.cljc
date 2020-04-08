@@ -53,7 +53,7 @@
            (doseq [v s]
              (>>= (f v)))))
 
-(defnm local [f m]
+(defnm rlocal [f m]
   {:keys [reader] :as raw-state} <- raw-get
   (raw-set (assoc raw-state :reader (f reader)))
   res <- m
