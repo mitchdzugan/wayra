@@ -58,6 +58,14 @@
   (testing "fail" (is (= (get-error (mdo (fail "x_x") (put 9))) "x_x")))
   (testing "fails" (is (= (get-state (mdo (fail "x_x") (put 9))) nil)))
   (testing "no fail" (is (= (get-error (put 1)) nil)))
+  (testing "eachm" (is (= (get-writer (eachm (range 400) tell))
+                          (reverse (range 400)))))
+  (testing "mapm" (is (= (get-result 1 1 (mapm (fnm [_]
+                                                    (modify #(* 2 %1))
+                                                    curr <- get
+                                                    [curr])
+                                               (range 5)))
+                         '(2 4 8 16 32))))
   (testing "local"
     (is (= (get-writer 10 (mdo r1 <- ask
                                (tell r1)
@@ -79,7 +87,12 @@
     (is (= (get-writer (mdo (tell "1")
                             (listen (mdo (tell "2")
                                          (listen (tell "3"))))))
-           '("3" "2" "1"))))
+           '("3" "2" "1")))
+    (is (= (get-writer (mdo (listen (fn [_] {:to nil})
+                                    (mdo (tell {:to 1})))))
+           {:to '(1)}))
+    (is (= (get-writer (mdo (listen (mdo (tell {:to 1})))))
+           '({:to 1}))))
   (testing "pass"
     (is (= (get-writer (mdo ret <- (pass (mdo (tell "2")
                                               [["3" #(if (> (count %1) 1)

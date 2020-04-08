@@ -3,6 +3,8 @@
                :cljs [cloroutine.core :refer-macros [cr]]))
   #?(:cljs (:require-macros [wayra.impl :refer [mdo-raw]])))
 
+;; TODO make stack safe
+
 (def ^:dynamic *coroutine*)
 (def ^:dynamic *bind*)
 (def ^:dynamic *result*)

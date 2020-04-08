@@ -38,6 +38,21 @@
                :state init-state
                :writer init-writer}))
 
+(defn mapm [f s]
+  (mdo-raw state-e-monad
+           (if (empty? s) '()
+               (reverse
+                (loop [[x & xs] s
+                       acc nil]
+                  (if (nil? xs)
+                    (conj acc (>>= (f x)))
+                    (recur xs (conj acc (>>= (f x))))))))))
+
+(defn eachm [s f]
+  (mdo-raw state-e-monad
+           (doseq [v s]
+             (>>= (f v)))))
+
 (defnm local [f m]
   {:keys [reader] :as raw-state} <- raw-get
   (raw-set (assoc raw-state :reader (f reader)))
@@ -46,21 +61,25 @@
   (raw-set (assoc new-state :reader reader))
   [res])
 
-(defnm listen [m]
-  {:keys [init-writer writer] :as raw-state} <- raw-get
-  (raw-set (assoc raw-state :writer init-writer))
-  res <- m
-  new-state <- raw-get
-  let [listened (:writer new-state)]
-  (raw-set (assoc new-state :writer (mappend writer listened)))
-  [[res listened]])
+(defnm listen
+  ([m] (listen identity m))
+  ([alter-init m]
+   {:keys [init-writer writer] :as raw-state} <- raw-get
+   (raw-set (assoc raw-state :writer (alter-init init-writer)))
+   res <- m
+   new-state <- raw-get
+   let [listened (:writer new-state)]
+   (raw-set (assoc new-state :writer (mappend writer listened)))
+   [[res listened]]))
 
-(defnm pass [m]
-  {:keys [init-writer writer] :as raw-state} <- raw-get
-  (raw-set (assoc raw-state :writer init-writer))
-  [res f] <- m
-  new-state <- raw-get
-  let [listened (:writer new-state)]
-  (raw-set (assoc new-state :writer (mappend writer (f listened))))
-  [res])
+(defnm pass
+  ([m] (pass identity m))
+  ([alter-init m]
+   {:keys [init-writer writer] :as raw-state} <- raw-get
+   (raw-set (assoc raw-state :writer (alter-init init-writer)))
+   [res f] <- m
+   new-state <- raw-get
+   let [listened (:writer new-state)]
+   (raw-set (assoc new-state :writer (mappend writer (f listened))))
+   [res]))
 
