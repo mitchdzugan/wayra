@@ -66,10 +66,10 @@
                                                     [curr])
                                                (range 5)))
                          '(2 4 8 16 32))))
-  (testing "rlocal"
+  (testing "local"
     (is (= (get-writer 10 (mdo r1 <- ask
                                (tell r1)
-                               ret <- (rlocal inc (mdo r2 <- ask
+                               ret <- (local inc (mdo r2 <- ask
                                                        (tell r2)
                                                        [0]))
                                (tell ret)

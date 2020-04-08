@@ -3,7 +3,7 @@
    [wayra.impl :as impl :refer [state-e-monad >>= mdo-raw raw-get raw-set raw-exec]]
    [wayra.macros :as macros]
    [wayra.monoid :as monoid])
-  #?(:cljs (:require-macros [wayra.core :refer [mdo]])))
+  #?(:cljs (:require-macros [wayra.core :refer [mdo defm defnm fnm whenm]])))
 
 
 #?(:clj (defmacro mdo [& args] `(macros/mdo ~@args)))
@@ -53,7 +53,7 @@
            (doseq [v s]
              (>>= (f v)))))
 
-(defnm rlocal [f m]
+(defnm local [f m]
   {:keys [reader] :as raw-state} <- raw-get
   (raw-set (assoc raw-state :reader (f reader)))
   res <- m
