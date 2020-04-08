@@ -1,52 +1,69 @@
 (ns wayra.impl
   (:require #?(:clj  [cloroutine.core :refer [cr]]
                :cljs [cloroutine.core :refer-macros [cr]]))
-  #?(:cljs (:require-macros [wayra.impl :refer [mdo-raw]])))
+  #?(:cljs (:require-macros [wayra.impl :refer [generator]])))
 
-;; TODO make stack safe
+(def ^:dynamic *tail*)
+(def a-error (atom nil))
+(def a-result (atom nil))
+(def a-state (atom nil))
 
-(def ^:dynamic *coroutine*)
-(def ^:dynamic *bind*)
-(def ^:dynamic *result*)
+(defn gen-seq [gen]
+  (binding [*tail* (lazy-seq (gen-seq gen))] (gen)))
 
-(defn run [c b]
-  (binding [*coroutine* c
-            *bind* b] (c)))
+(defn yield [x]
+  (cons x *tail*))
 
-(defn fork [c b r]
-  (binding [*result* r]
-    (c run b)))
+(defn resume [] @a-result)
 
-(defn >>= [m]
-  (*bind* (partial fork *coroutine* *bind*) m))
-
-(defn =<< [] *result*)
+(defn eval-m [{:keys [type val err]}]
+  (reset! a-result
+          ((get {:get (fn [] @a-state)
+                 :pure (fn [] val)
+                 :set (fn []
+                        (reset! a-state val)
+                        nil)
+                 :error (fn []
+                          (reset! a-error err)
+                          nil)}
+                type))))
 
 #?(:clj
-   (defmacro mdo-raw [monad & body]
-     `(run (cr {>>= =<<} ((first ~monad) (do ~@body))) (second ~monad))))
+   (defmacro generator [& body]
+     `(gen-seq (cr {yield resume} ~@body nil))))
 
-(def state-e-monad
-  [(fn [x] (fn [s] [x s]))
-   (fn [f m] (fn [s] (let [[x s e] (m s)]
-                       (if e [nil nil e]
-                           ((f x) s)))))])
+(defn unwrap-f [mf]
+  (loop [m mf]
+    (if (fn? m)
+      (recur (m))
+      m)))
 
-(defn raw-exec [m s]
-  (let [[result raw-state raw-error] (m s)]
-    (if raw-error
-      {:error (:error raw-error)
-       :writer (-> raw-error :raw-state :writer)
-       :state (-> raw-error :raw-state :state)}
-      {:result result :writer (:writer raw-state) :state (:state raw-state)})))
+(defn raw-exec [mf s]
+  (reset! a-state s)
+  (reset! a-error nil)
+  (doseq [m (unwrap-f mf)]
+    (when (nil? @a-error)
+      (eval-m m)))
+  (merge
+   (if (nil? @a-error)
+     {:result @a-result}
+     {:error @a-error})
+   {:writer (:writer @a-state)
+    :state (:state @a-state)}))
 
-(defn raw-get [s]
-  [s s])
+(def raw-get
+  (fn []
+    (generator (yield {:type :get}))))
 
 (defn raw-set [s]
-  (fn [_] [nil s]))
+  (fn []
+    (generator (yield {:type :set :val s}))))
 
-(defn fail [e] (fn [s] [nil nil {:error e :raw-state s}]))
+(defn pure [x]
+  (fn []
+    (generator (yield {:type :pure :val x}))))
 
-(def pure (fn [x] (fn [s] [x s])))
+(defn fail [err]
+  (fn []
+    (generator (yield {:type :error :err err}))))
 

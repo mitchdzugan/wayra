@@ -1,6 +1,6 @@
 (ns wayra.core
   (:require
-   [wayra.impl :as impl :refer [state-e-monad >>= mdo-raw raw-get raw-set raw-exec]]
+   [wayra.impl :as impl :refer [generator raw-get raw-set raw-exec]]
    [wayra.macros :as macros]
    [wayra.monoid :as monoid])
   #?(:cljs (:require-macros [wayra.core :refer [mdo defm defnm fnm whenm]])))
@@ -15,23 +15,35 @@
 (def mappend monoid/mappend)
 (def pure impl/pure)
 (def fail impl/fail)
-(def ask (mdo-raw state-e-monad (-> raw-get >>= :reader)))
-(defn asks [f] (mdo-raw state-e-monad (-> ask >>= f)))
-(defn tell [w]
-  (mdo-raw state-e-monad
-           (let [{:keys [writer] :as raw-state} (>>= raw-get)]
-             (>>= (raw-set (assoc raw-state :writer
-                                  (monoid/maplus writer w)))))))
-(def get (mdo-raw state-e-monad (-> raw-get >>= :state)))
-(defn gets [f] (mdo-raw state-e-monad (-> get >>= f)))
-(defn put [s]
-  (mdo-raw state-e-monad
-           (let [raw-state (>>= raw-get)]
-             (>>= (raw-set (assoc raw-state :state s))))))
-(defn modify [f]
-  (mdo-raw state-e-monad
-           (let [{:keys [state] :as raw-state} (>>= raw-get)]
-             (>>= (raw-set (assoc raw-state :state (f state)))))))
+
+(defm ask
+  raw-state <- raw-get
+  [(:reader raw-state)])
+
+(defnm asks [f]
+  reader <- ask
+  [(f reader)])
+
+(defnm tell [w]
+  {:keys [writer] :as raw-state} <- raw-get
+  (raw-set (assoc raw-state :writer (monoid/maplus writer w))))
+
+(defm get
+  raw-state <- raw-get
+  [(:state raw-state)])
+
+(defnm gets [f]
+  state <- get
+  [(f state)])
+
+(defnm put [s]
+  raw-state <- raw-get
+  (raw-set (assoc raw-state :state s)))
+
+(defnm modify [f]
+  {:keys [state] :as raw-state} <- raw-get
+  (raw-set (assoc raw-state :state (f state))))
+
 (defn exec [{:keys [reader init-state init-writer]} m]
   (raw-exec m {:init-writer init-writer
                :reader reader
@@ -39,19 +51,19 @@
                :writer init-writer}))
 
 (defn mapm [f s]
-  (mdo-raw state-e-monad
-           (if (empty? s) '()
-               (reverse
-                (loop [[x & xs] s
-                       acc nil]
-                  (if (nil? xs)
-                    (conj acc (>>= (f x)))
-                    (recur xs (conj acc (>>= (f x))))))))))
+  (generator
+   (if (empty? s) (macros/yield-from (pure '()))
+       (macros/yield-from (pure (reverse
+                                 (loop [[x & xs] s
+                                        acc nil]
+                                   (if (nil? xs)
+                                     (conj acc (macros/yield-from (f x)))
+                                     (recur xs (conj acc (macros/yield-from (f x))))))))))))
 
 (defn eachm [s f]
-  (mdo-raw state-e-monad
-           (doseq [v s]
-             (>>= (f v)))))
+  (generator
+   (doseq [v s]
+     (macros/yield-from (f v)))))
 
 (defnm local [f m]
   {:keys [reader] :as raw-state} <- raw-get

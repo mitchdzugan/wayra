@@ -58,8 +58,8 @@
   (testing "fail" (is (= (get-error (mdo (fail "x_x") (put 9))) "x_x")))
   (testing "fails" (is (= (get-state (mdo (fail "x_x") (put 9))) nil)))
   (testing "no fail" (is (= (get-error (put 1)) nil)))
-  (testing "eachm" (is (= (get-writer (eachm (range 400) tell))
-                          (reverse (range 400)))))
+  (testing "eachm" (is (= (get-writer (eachm (range 40) tell))
+                          (reverse (range 40)))))
   (testing "mapm" (is (= (get-result 1 1 (mapm (fnm [_]
                                                     (modify #(* 2 %1))
                                                     curr <- get
@@ -70,8 +70,8 @@
     (is (= (get-writer 10 (mdo r1 <- ask
                                (tell r1)
                                ret <- (local inc (mdo r2 <- ask
-                                                       (tell r2)
-                                                       [0]))
+                                                      (tell r2)
+                                                      [0]))
                                (tell ret)
                                r3 <- ask
                                (tell r3)))
@@ -139,3 +139,5 @@
     (is (= (get-result 3 6 (abuse-macro 2)) 4))
     (is (= (get-writer 3 6 (abuse-macro -2)) '("was negative")))
     (is (= (get-result 3 6 (abuse-macro -2)) 4))))
+
+
