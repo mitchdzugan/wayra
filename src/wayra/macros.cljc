@@ -31,20 +31,16 @@
 
 #?(:clj
    (defmacro mdo [& statements]
-     (let [statements (->> statements
-                           (reduce
-                            (fn [{:keys [prev-let? code]} curr]
-                              (cond
-                                (= 'let curr) {:prev-let? true
-                                               :code code}
-                                (and (not prev-let?)
-                                     (vector? curr)) {:prev-let? false
-                                                      :code (conj code
-                                                                  `(pure (do ~@curr)))}
-                                :else {:prev-let? false
-                                       :code (conj code curr)}))
-                            {:prev-let? false :code []})
-                           :code)
+     (let [statements (map (fn [curr prev next]
+                             (if (and (vector? curr)
+                                      (not= 'let prev)
+                                      (not= '<- next))
+                               `(pure (do ~@curr))
+                               curr))
+                           statements
+                           (concat [nil] statements)
+                           (concat (drop 1 statements) [nil]))
+           statements (remove #(= 'let %) statements)
            [standard guarded] (split-with #(not (= % '-->)) statements)
            needs-guard? (> (count guarded) 1)
            guard-point (-> standard count dec)
@@ -63,9 +59,9 @@
                        [arrow monad & other-statements] statements]
                    (cond
                      (nil? statements) `(>>= ~curr)
-                     (vector? curr) `(letrec ~curr ~(make-fdo statements))
                      (= arrow (symbol '<-)) `(let [~curr (>>= ~monad)]
                                                ~(make-fdo other-statements))
+                     (vector? curr) `(letrec ~curr ~(make-fdo statements))
                      :else `(do (>>= ~curr)
                                 ~(make-fdo statements)))))]
          `(mdo-raw state-e-monad ~(make-fdo with-guard))))))

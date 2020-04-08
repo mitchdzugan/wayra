@@ -11,6 +11,7 @@
 #?(:clj (defmacro defnm [& args] `(macros/defnm ~@args)))
 #?(:clj (defmacro fnm [& args] `(macros/fnm ~@args)))
 #?(:clj (defmacro whenm [& args] `(macros/whenm ~@args)))
+(def maplus monoid/maplus)
 (def mappend monoid/mappend)
 (def pure impl/pure)
 (def fail impl/fail)
@@ -20,7 +21,7 @@
   (mdo-raw state-e-monad
            (let [{:keys [writer] :as raw-state} (>>= raw-get)]
              (>>= (raw-set (assoc raw-state :writer
-                                  (monoid/mappend writer w)))))))
+                                  (monoid/maplus writer w)))))))
 (def get (mdo-raw state-e-monad (-> raw-get >>= :state)))
 (defn gets [f] (mdo-raw state-e-monad (-> get >>= f)))
 (defn put [s]
@@ -32,6 +33,34 @@
            (let [{:keys [state] :as raw-state} (>>= raw-get)]
              (>>= (raw-set (assoc raw-state :state (f state)))))))
 (defn exec [{:keys [reader init-state init-writer]} m]
-  (raw-exec m {:reader reader
+  (raw-exec m {:init-writer init-writer
+               :reader reader
                :state init-state
                :writer init-writer}))
+
+(defnm local [f m]
+  {:keys [reader] :as raw-state} <- raw-get
+  (raw-set (assoc raw-state :reader (f reader)))
+  res <- m
+  new-state <- raw-get
+  (raw-set (assoc new-state :reader reader))
+  [res])
+
+(defnm listen [m]
+  {:keys [init-writer writer] :as raw-state} <- raw-get
+  (raw-set (assoc raw-state :writer init-writer))
+  res <- m
+  new-state <- raw-get
+  let [listened (:writer new-state)]
+  (raw-set (assoc new-state :writer (mappend writer listened)))
+  [[res listened]])
+
+(defnm pass [m]
+  {:keys [init-writer writer] :as raw-state} <- raw-get
+  (raw-set (assoc raw-state :writer init-writer))
+  [res f] <- m
+  new-state <- raw-get
+  let [listened (:writer new-state)]
+  (raw-set (assoc new-state :writer (mappend writer (f listened))))
+  [res])
+
