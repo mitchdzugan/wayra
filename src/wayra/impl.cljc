@@ -4,9 +4,7 @@
   #?(:cljs (:require-macros [wayra.impl :refer [generator]])))
 
 (def ^:dynamic *tail*)
-(def a-error (atom nil))
-(def a-result (atom nil))
-(def a-state (atom nil))
+(def ^:dynamic *atoms* {})
 
 (defn gen-seq [gen]
   (binding [*tail* (lazy-seq (gen-seq gen))] (gen)))
@@ -14,23 +12,7 @@
 (defn yield [x]
   (cons x *tail*))
 
-(defn resume [] @a-result)
-
-(defn eval-m [{:keys [type val err]}]
-  (reset! a-result
-          ((get {:get (fn [] @a-state)
-                 :pure (fn [] val)
-                 :set (fn []
-                        (reset! a-state val)
-                        nil)
-                 :error (fn []
-                          (reset! a-error err)
-                          nil)}
-                type))))
-
-#?(:clj
-   (defmacro generator [& body]
-     `(gen-seq (cr {yield resume} ~@body nil))))
+(defn resume [] @(:a-result *atoms*))
 
 (defn unwrap-f [mf]
   (loop [m mf]
@@ -38,18 +20,38 @@
       (recur (m))
       m)))
 
+(defn eval-m [mf]
+  (let [{:keys [type val err]} (unwrap-f mf)
+        {:keys [a-state a-result a-error]} *atoms*]
+    (reset! a-result
+            ((get {:get (fn [] @a-state)
+                   :pure (fn [] val)
+                   :set (fn []
+                          (reset! a-state val)
+                          nil)
+                   :error (fn []
+                            (reset! a-error err)
+                            nil)}
+                  type)))))
+
+#?(:clj
+   (defmacro generator [& body]
+     `(gen-seq (cr {yield resume} ~@body nil))))
+
 (defn raw-exec [mf s]
-  (reset! a-state s)
-  (reset! a-error nil)
-  (doseq [m (unwrap-f mf)]
-    (when (nil? @a-error)
-      (eval-m m)))
-  (merge
-   (if (nil? @a-error)
-     {:result @a-result}
-     {:error @a-error})
-   {:writer (:writer @a-state)
-    :state (:state @a-state)}))
+  (binding [*atoms* {:a-state (atom s)
+                     :a-error (atom nil)
+                     :a-result (atom nil)}]
+    (let [{:keys [a-state a-result a-error]} *atoms*]
+      (doseq [m (unwrap-f mf)]
+        (when (nil? @a-error)
+          (eval-m m)))
+      (merge
+       (if (nil? @a-error)
+         {:result @a-result}
+         {:error @a-error})
+       {:writer (:writer @a-state)
+        :state (:state @a-state)}))))
 
 (def raw-get
   (fn []

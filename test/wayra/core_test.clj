@@ -34,6 +34,12 @@
 (defn get-state [& args] (:state (apply do-exec args)))
 (defn get-writer [& args] (:writer (apply do-exec args)))
 
+(defm exec-in-m
+  r1 <- ask
+  let [ri (get-result (inc r1) ask)]
+  r2 <- ask
+  [[r1 r2 ri]])
+
 (defnm abuse-macro [n]
   (= 0 n) --> (pure 1)
   (whenm (<= n 0)
@@ -58,6 +64,8 @@
   (testing "fail" (is (= (get-error (mdo (fail "x_x") (put 9))) "x_x")))
   (testing "fails" (is (= (get-state (mdo (fail "x_x") (put 9))) nil)))
   (testing "no fail" (is (= (get-error (put 1)) nil)))
+  (testing "exec-in-m" (is (= (get-result 0 exec-in-m)
+                              [0 0 1])))
   (testing "eachm" (is (= (get-writer (eachm (range 40) tell))
                           (reverse (range 40)))))
   (testing "mapm" (is (= (get-result 1 1 (mapm (fnm [_]
