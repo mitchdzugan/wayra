@@ -66,8 +66,8 @@
   (testing "no fail" (is (= (get-error (put 1)) nil)))
   (testing "exec-in-m" (is (= (get-result 0 exec-in-m)
                               [0 0 1])))
-  (testing "eachm" (is (= (get-writer (eachm (range 40) tell))
-                          (reverse (range 40)))))
+  (testing "eachm" (is (= (get-writer (eachm (range 400) tell))
+                          (reverse (range 400)))))
   (testing "mapm" (is (= (get-result 1 1 (mapm (fnm [_]
                                                     (modify #(* 2 %1))
                                                     curr <- get

@@ -1,18 +1,6 @@
-(ns wayra.impl
-  (:require #?(:clj  [cloroutine.core :refer [cr]]
-               :cljs [cloroutine.core :refer-macros [cr]]))
-  #?(:cljs (:require-macros [wayra.impl :refer [generator]])))
+(ns wayra.impl)
 
-(def ^:dynamic *tail*)
 (def ^:dynamic *atoms* {})
-
-(defn gen-seq [gen]
-  (binding [*tail* (lazy-seq (gen-seq gen))] (gen)))
-
-(defn yield [x]
-  (cons x *tail*))
-
-(defn resume [] @(:a-result *atoms*))
 
 (defn unwrap-f [mf]
   (loop [m mf]
@@ -21,31 +9,27 @@
       m)))
 
 (defn eval-m [mf]
-  (let [{:keys [type val err]} (unwrap-f mf)
-        {:keys [a-state a-result a-error]} *atoms*]
-    (reset! a-result
-            ((get {:get (fn [] @a-state)
-                   :pure (fn [] val)
-                   :set (fn []
-                          (reset! a-state val)
-                          nil)
-                   :error (fn []
-                            (reset! a-error err)
-                            nil)}
-                  type)))))
-
-#?(:clj
-   (defmacro generator [& body]
-     `(gen-seq (cr {yield resume} ~@body nil))))
+  (let [{:keys [a-state a-result a-error]} *atoms*]
+    (when (nil? @a-error)
+      (let [{:keys [type val err]} (unwrap-f mf)]
+        (when (nil? @a-error)
+          (reset! a-result
+                  ((get {:get (fn [] @a-state)
+                         :pure (fn [] val)
+                         :set (fn []
+                                (reset! a-state val)
+                                nil)
+                         :error (fn []
+                                  (reset! a-error err)
+                                  nil)}
+                        type))))))))
 
 (defn raw-exec [mf s]
   (binding [*atoms* {:a-state (atom s)
                      :a-error (atom nil)
                      :a-result (atom nil)}]
     (let [{:keys [a-state a-result a-error]} *atoms*]
-      (doseq [m (unwrap-f mf)]
-        (when (nil? @a-error)
-          (eval-m m)))
+      (eval-m mf)
       (merge
        (if (nil? @a-error)
          {:result @a-result}
@@ -54,18 +38,14 @@
         :state (:state @a-state)}))))
 
 (def raw-get
-  (fn []
-    (generator (yield {:type :get}))))
+  {:type :get})
 
 (defn raw-set [s]
-  (fn []
-    (generator (yield {:type :set :val s}))))
+  {:type :set :val s})
 
 (defn pure [x]
-  (fn []
-    (generator (yield {:type :pure :val x}))))
+  {:type :pure :val x})
 
 (defn fail [err]
-  (fn []
-    (generator (yield {:type :error :err err}))))
+  {:type :error :err err})
 

@@ -1,6 +1,6 @@
 (ns wayra.core
   (:require
-   [wayra.impl :as impl :refer [generator raw-get raw-set raw-exec]]
+   [wayra.impl :as impl :refer [raw-get raw-set raw-exec]]
    [wayra.macros :as macros]
    [wayra.monoid :as monoid])
   #?(:cljs (:require-macros [wayra.core :refer [mdo defm defnm fnm whenm]])))
@@ -51,19 +51,20 @@
                :writer init-writer}))
 
 (defn mapm [f s]
-  (generator
-   (if (empty? s) (macros/yield-from (pure '()))
-       (macros/yield-from (pure (reverse
-                                 (loop [[x & xs] s
-                                        acc nil]
-                                   (if (nil? xs)
-                                     (conj acc (macros/yield-from (f x)))
-                                     (recur xs (conj acc (macros/yield-from (f x))))))))))))
+  (fn []
+    (if (empty? s) (pure '())
+        (pure (reverse
+               (loop [[x & xs] s
+                      acc nil]
+                 (if (nil? xs)
+                   (conj acc (impl/eval-m (f x)))
+                   (recur xs (conj acc (impl/eval-m (f x)))))))))))
 
 (defn eachm [s f]
-  (generator
-   (doseq [v s]
-     (macros/yield-from (f v)))))
+  (fn []
+    (doseq [v s]
+      (impl/eval-m (f v)))
+    (pure nil)))
 
 (defnm local [f m]
   {:keys [reader] :as raw-state} <- raw-get

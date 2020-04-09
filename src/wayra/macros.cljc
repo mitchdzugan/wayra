@@ -1,7 +1,7 @@
 (ns wayra.macros
-  (:require [wayra.impl :refer [generator yield pure unwrap-f]])
-  #?(:cljs (:require-macros [wayra.macros :refer [letrec mdo fnm defnm
-                                                  defm whenm yield-from]])))
+  (:require [wayra.impl :refer [pure unwrap-f eval-m]])
+  #?(:cljs (:require-macros
+            [wayra.macros :refer [letrec mdo fnm defnm defm whenm]])))
 
 
 #?(:clj
@@ -29,15 +29,6 @@
                             [s `(aget ~arrs ~(arrm s))])
                           bssl)]
             ~@body)))))
-
-#?(:clj
-   (defmacro yield-from [other]
-     (let [a (gensym "a")
-           v (gensym "v")]
-       `(let [~a (atom nil)]
-          (doseq [~v (unwrap-f ~other)]
-            (reset! ~a (yield ~v)))
-          @~a))))
 
 #?(:clj
    (defmacro mdo [& statements]
@@ -68,13 +59,13 @@
                  (let [[curr & statements] statements
                        [arrow monad & other-statements] statements]
                    (cond
-                     (nil? statements) `(yield-from ~curr)
-                     (= arrow (symbol '<-)) `(let [~curr (yield-from ~monad)]
+                     (nil? statements) curr
+                     (= arrow (symbol '<-)) `(let [~curr (eval-m ~monad)]
                                                ~(make-fdo other-statements))
                      (vector? curr) `(letrec ~curr ~(make-fdo statements))
-                     :else `(do (yield-from ~curr)
+                     :else `(do (eval-m ~curr)
                                 ~(make-fdo statements)))))]
-         `(fn [] (generator ~(make-fdo with-guard)))))))
+         `(fn [] ~(make-fdo with-guard))))))
 
 (defn add-fdo [sym]
   (fn [& statements]
