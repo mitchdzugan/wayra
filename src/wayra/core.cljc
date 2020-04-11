@@ -11,6 +11,7 @@
 #?(:clj (defmacro defnm [& args] `(macros/defnm ~@args)))
 #?(:clj (defmacro fnm [& args] `(macros/fnm ~@args)))
 #?(:clj (defmacro whenm [& args] `(macros/whenm ~@args)))
+(def mempty monoid/mempty)
 (def maplus monoid/maplus)
 (def mappend monoid/mappend)
 (def pure impl/pure)
@@ -65,6 +66,11 @@
     (doseq [v s]
       (impl/eval-m (f v)))
     (pure nil)))
+
+(defn preemptm
+  ([preempter f] (preemptm preempter identity f))
+  ([preempter from-res f]
+   (pure (preempter from-res #(impl/eval-m (f %1))))))
 
 (defnm local [f m]
   {:keys [reader] :as raw-state} <- raw-get

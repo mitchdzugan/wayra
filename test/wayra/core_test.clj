@@ -2,7 +2,6 @@
   (:require [clojure.test :refer :all]
             [wayra.core :refer :all]))
 
-
 (defnm ask-test [a]
   b <- ask
   [(+ a b)])
@@ -132,6 +131,11 @@
                                      {:v [2] :l '(1) :s #{3}})
                             {:v [1 2] :l '(1) :s #{1 2 3}}))))
 
+(deftest mempty-types
+  (testing "mempty"
+    (is (= (mempty {:v [1 2] :s #{3} :l '(4 5) :n nil})
+           {:v [] :s #{} :l nil :n nil}))))
+
 (deftest other-macro-features
   (testing "letrec"
     (is (= (get-result 0 6 letrec-fact) 1))
@@ -148,4 +152,63 @@
     (is (= (get-writer 3 6 (abuse-macro -2)) '("was negative")))
     (is (= (get-result 3 6 (abuse-macro -2)) 4))))
 
+(defn pre-fact [fact]
+  (fn [n]
+    (cond
+      (< n 2) 1
+      :else (* n (fact (dec n))))))
 
+(defnm mpre-fact [fact]
+  default <- (asks :default)
+  [(fn [n]
+     (cond
+       (< n 0) default
+       (< n 2) 1
+       :else (* n (fact (dec n)))))])
+
+(defnm mpre-fact2 [fact]
+  default <- (asks :default)
+  [{:a :a
+    :fact (fn [n]
+            (cond
+              (< n 0) default
+              (< n 2) 1
+              :else (* n (fact (dec n)))))}])
+
+(defn fpreempt
+  ([f] (fpreempt identity f))
+  ([from-res f]
+   (let [a-f (atom nil)
+         res (f (fn [& args] (apply @a-f args)))]
+     (reset! a-f (from-res res))
+     res)))
+
+(deftest preempting
+  (testing "fpreempt"
+    (let [fact (fpreempt pre-fact)]
+      (is (= (fact -1) 1))
+      (is (= (fact 0) 1))
+      (is (= (fact 1) 1))
+      (is (= (fact 2) 2))
+      (is (= (fact 3) 6))
+      (is (= (fact 4) 24))))
+  (testing "preemptm"
+    (let [m (mdo fact <- (preemptm fpreempt mpre-fact)
+                 (tell (fact -1))
+                 (tell (fact 0))
+                 (tell (fact 1))
+                 (tell (fact 2))
+                 (tell (fact 3))
+                 (tell (fact 4)))]
+      (is (= (get-writer {:default :NaN} m)
+             '(24 6 2 1 1 :NaN))))
+    (let [m (mdo {:keys [fact a]} <- (preemptm fpreempt :fact mpre-fact2)
+                 (tell a)
+                 (tell (fact -1))
+                 (tell (fact 0))
+                 (tell (fact 1))
+                 (tell (fact 2))
+                 (tell (fact 3))
+                 (tell (fact 4)))]
+      (is (= (get-writer {:default :NaN} m)
+             '(24 6 2 1 1 :NaN :a))))))
