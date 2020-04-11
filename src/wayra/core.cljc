@@ -84,21 +84,29 @@
   ([m] (listen identity m))
   ([alter-init m]
    {:keys [init-writer writer] :as raw-state} <- raw-get
-   (raw-set (assoc raw-state :writer (alter-init init-writer)))
+   (raw-set (-> raw-state
+                (assoc :writer (alter-init init-writer))
+                (assoc :init-writer (alter-init init-writer))))
    res <- m
    new-state <- raw-get
    let [listened (:writer new-state)]
-   (raw-set (assoc new-state :writer (mappend writer listened)))
+   (raw-set (-> new-state
+                (assoc :writer (mappend writer listened))
+                (assoc :init-writer init-writer)))
    [[res listened]]))
 
 (defnm pass
   ([m] (pass identity m))
   ([alter-init m]
    {:keys [init-writer writer] :as raw-state} <- raw-get
-   (raw-set (assoc raw-state :writer (alter-init init-writer)))
+   (raw-set (-> raw-state
+                (assoc :writer (alter-init init-writer))
+                (assoc :init-writer (alter-init init-writer))))
    [res f] <- m
    new-state <- raw-get
    let [listened (:writer new-state)]
-   (raw-set (assoc new-state :writer (mappend writer (f listened))))
+   (raw-set (-> new-state
+                (assoc :writer (mappend writer (f listened)))
+                (assoc :init-writer init-writer)))
    [res]))
 
