@@ -5,7 +5,6 @@
    [wayra.monoid :as monoid])
   #?(:cljs (:require-macros [wayra.core :refer [mdo defm defnm fnm whenm]])))
 
-
 #?(:clj (defmacro mdo [& args] `(macros/mdo ~@args)))
 #?(:clj (defmacro defm [& args] `(macros/defm ~@args)))
 #?(:clj (defmacro defnm [& args] `(macros/defnm ~@args)))
@@ -46,8 +45,7 @@
   (raw-set (assoc raw-state :state (f state))))
 
 (defn exec [{:keys [reader init-state init-writer]} m]
-  (raw-exec m {:init-writer init-writer
-               :reader reader
+  (raw-exec m {:reader reader
                :state init-state
                :writer init-writer}))
 
@@ -80,33 +78,35 @@
   (raw-set (assoc new-state :reader reader))
   [res])
 
+(defm erased
+  {:keys [writer]} <- raw-get
+  [(mempty writer)])
+
 (defnm listen
   ([m] (listen identity m))
   ([alter-init m]
-   {:keys [init-writer writer] :as raw-state} <- raw-get
+   init-writer <- erased
+   {:keys [writer] :as raw-state} <- raw-get
    (raw-set (-> raw-state
-                (assoc :writer (alter-init init-writer))
-                (assoc :init-writer (alter-init init-writer))))
+                (assoc :writer (alter-init init-writer))))
    res <- m
    new-state <- raw-get
    let [listened (:writer new-state)]
    (raw-set (-> new-state
-                (assoc :writer (mappend writer listened))
-                (assoc :init-writer init-writer)))
+                (assoc :writer (mappend writer listened))))
    [[res listened]]))
 
 (defnm pass
   ([m] (pass identity m))
   ([alter-init m]
-   {:keys [init-writer writer] :as raw-state} <- raw-get
+   init-writer <- erased
+   {:keys [writer] :as raw-state} <- raw-get
    (raw-set (-> raw-state
-                (assoc :writer (alter-init init-writer))
-                (assoc :init-writer (alter-init init-writer))))
+                (assoc :writer (alter-init init-writer))))
    [res f] <- m
    new-state <- raw-get
    let [listened (:writer new-state)]
    (raw-set (-> new-state
-                (assoc :writer (mappend writer (f listened)))
-                (assoc :init-writer init-writer)))
+                (assoc :writer (mappend writer (f listened)))))
    [res]))
 
