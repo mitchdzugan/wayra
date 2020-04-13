@@ -41,9 +41,10 @@
 
 (defnm abuse-macro [n]
   (= 0 n) --> (pure 1)
+  let [squared (* n n)]
   (whenm (<= n 0)
          (tell "was negative"))
-  (pure (* n n)))
+  (pure squared))
 
 (defm letrec-fact
   r <- ask

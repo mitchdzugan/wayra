@@ -41,8 +41,8 @@
                            statements
                            (concat [nil] statements)
                            (concat (drop 1 statements) [nil]))
-           statements (remove #(= 'let %) statements)
            [standard guarded] (split-with #(not (= % '-->)) statements)
+           standard (remove #(= 'let %) standard)
            needs-guard? (> (count guarded) 1)
            guard-point (-> standard count dec)
            with-guard (reduce
