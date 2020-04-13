@@ -1,4 +1,4 @@
-(defproject wayra "0.0.18"
+(defproject wayra "0.0.19"
   :description "FIXME: write description"
   :url "https://github.com/mitchdzugan/wayra"
   :license {:name "Eclipse Public License"
