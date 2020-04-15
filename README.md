@@ -4,7 +4,7 @@
 [![Clojars Project](https://img.shields.io/clojars/v/wayra.svg)](https://clojars.org/wayra)
 
 ```clj
-[wayra "0.0.20"]
+[wayra "0.0.21"]
 ```
 
 **wayra** [wajɾa] *(Quechuan)* • noun
