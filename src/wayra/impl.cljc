@@ -1,6 +1,6 @@
 (ns wayra.impl)
 
-(def ^:dynamic *state* #?(:clj (to-array [nil nil nil])
+(def ^:dynamic *state* #?(:clj (atom {:s nil :r nil :e nil})
                           :cljs #js [nil nil nil]))
 
 (defn unwrap-f [mf]
@@ -10,30 +10,49 @@
       m)))
 
 (defn eval-m [mf]
-  (let [state (aget *state* 0)
-        result (aget *state* 1)
-        error (aget *state* 2)]
-    (when (nil? error)
-      (let [{:keys [type val err]} (unwrap-f mf)]
-        (when (nil? (aget *state* 2))
-          (aset *state* 1
-                  ((get {:get (fn [] (aget *state* 0))
-                         :pure (fn [] val)
-                         :set (fn []
-                                (aset *state* 0 val)
-                                nil)
-                         :error (fn []
-                                  (aset *state* 2 err)
-                                  nil)}
-                        type))))))))
+  #?(:cljs
+     (when (nil? (aget *state* 2))
+       (let [{:keys [type val err]} (unwrap-f mf)]
+         (when (nil? (aget *state* 2))
+           (aset *state* 1
+                 ((get {:get (fn [] (aget *state* 0))
+                        :pure (fn [] val)
+                        :set (fn []
+                               (aset *state* 0 val)
+                               nil)
+                        :error (fn []
+                                 (aset *state* 2 err)
+                                 nil)}
+                       type))))))
+     :clj
+     (when (nil? (:e @*state*))
+       (let [{:keys [type val err]} (unwrap-f mf)]
+         (when (nil? (:e @*state*))
+           (let [r ((get {:get (fn [] (:s @*state*))
+                          :pure (fn [] val)
+                          :set (fn []
+                                 (swap! *state*
+                                        (fn [s]
+                                          (assoc s :s val)))
+                                 nil)
+                          :error (fn []
+                                   (swap! *state*
+                                          (fn [s]
+                                            (assoc s :e err)))
+                                   nil)}
+                         type))]
+             (swap! *state* #(assoc %1 :r r))
+             r
+             ))))))
 
 (defn raw-exec [mf s]
-  (binding [*state* #?(:clj (to-array [s nil nil])
+  (binding [*state* #?(:clj (atom {:s s :r nil :e nil})
                        :cljs #js [s nil nil])]
     (eval-m mf)
-    (let [state (aget *state* 0)
-          result (aget *state* 1)
-          error (aget *state* 2)]
+    (let #?(:cljs [state (aget *state* 0)
+                   result (aget *state* 1)
+                   error (aget *state* 2)]
+            :clj [{state :s error :e result :r} @*state*])
       (merge
        (if (nil? error)
          {:result result}
