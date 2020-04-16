@@ -21,7 +21,8 @@
   [a]
   b <- (gets inc)
   [(+ a b)])
-(defm put-test (put 9))
+(def put-test (put 9))
+(def mod-test (modify inc))
 
 (defn do-exec
   ([m] (exec {} m))
@@ -58,7 +59,7 @@
   (testing "get" (is (= (get-result 3 6 (get-test 9 5)) 20)))
   (testing "gets" (is (= (get-result 3 6 (gets-test 9)) 16)))
   (testing "put" (is (= (get-state 3 6 put-test) 9)))
-  (testing "modify" (is (= (get-state 3 6 (modify inc)) 7)))
+  (testing "modify" (is (= (get-state 3 10 mod-test) 11)))
   (testing "tell" (is (= (get-writer (mdo (tell 1) (tell 2))) '(2 1))))
   (testing "no tell" (is (= (get-writer (put 1)) nil)))
   (testing "fail" (is (= (get-error (mdo (fail "x_x") (put 9))) "x_x")))
@@ -213,3 +214,10 @@
                  (tell (fact 4)))]
       (is (= (get-writer {:default :NaN} m)
              '(24 6 2 1 1 :NaN :a))))))
+
+(deftest functor
+  (testing "vector"
+    (is (= (<#> [1 2 3 4]
+                inc
+                #(* %1 2))
+           [4 6 8 10]))))

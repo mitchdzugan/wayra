@@ -2,6 +2,7 @@
   (:require
    [wayra.impl :as impl :refer [raw-get raw-set raw-exec]]
    [wayra.macros :as macros]
+   [wayra.functor :as functor]
    [wayra.monoid :as monoid])
   #?(:cljs (:require-macros [wayra.core :refer [mdo defm defnm fnm whenm]])))
 
@@ -13,12 +14,13 @@
 (def mempty monoid/mempty)
 (def maplus monoid/maplus)
 (def mappend monoid/mappend)
+(defn <#> [root & fns] (reduce #(functor/fmap %1 %2) root fns))
+(defn >>= [root & fns] (reduce #(fn [] (%2 (impl/eval-m %1))) root fns))
+
 (def pure impl/pure)
 (def fail impl/fail)
 
-(defm ask
-  raw-state <- raw-get
-  [(:reader raw-state)])
+(def ask (<#> raw-get :reader))
 
 (defnm asks [f]
   reader <- ask
@@ -36,13 +38,13 @@
   state <- get
   [(f state)])
 
-(defnm put [s]
-  raw-state <- raw-get
-  (raw-set (assoc raw-state :state s)))
+(defn put [s]
+  (>>= raw-get
+       #(raw-set (assoc %1 :state s))))
 
-(defnm modify [f]
-  {:keys [state] :as raw-state} <- raw-get
-  (raw-set (assoc raw-state :state (f state))))
+(defn modify [f]
+  (>>= raw-get
+       #(raw-set (assoc %1 :state (f (:state %1))))))
 
 (defn exec [{:keys [reader init-state init-writer]} m]
   (raw-exec m {:reader reader
