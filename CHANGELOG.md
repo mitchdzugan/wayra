@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.0.22] — 2020-04-16
+
 ## [0.0.21] — 2020-04-15
 
 ## [0.0.20] — 2020-04-14
@@ -80,4 +82,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 [0.0.19]: https://github.com/Mitch Dzugan/wayra/compare/0.0.18...0.0.19
 [0.0.20]: https://github.com/Mitch Dzugan/wayra/compare/0.0.19...0.0.20
 [0.0.21]: https://github.com/Mitch Dzugan/wayra/compare/0.0.20...0.0.21
-[Unreleased]: https://github.com/Mitch Dzugan/wayra/compare/0.0.21...HEAD
+[0.0.22]: https://github.com/Mitch Dzugan/wayra/compare/0.0.21...0.0.22
+[Unreleased]: https://github.com/Mitch Dzugan/wayra/compare/0.0.22...HEAD
