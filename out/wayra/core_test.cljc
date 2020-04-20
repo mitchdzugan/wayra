@@ -1,6 +1,10 @@
 (ns wayra.core-test
-  (:require [clojure.test :refer :all]
-            [wayra.core :refer :all]))
+  (:require [clojure.test
+             :refer [deftest testing is]]
+            [wayra.core
+             :refer [defnm defm fnm mapm eachm mdo preemptm tell ask
+                     asks get gets put exec modify maplus mappend pure
+                     whenm fail local listen pass mempty <#>]]))
 
 (defnm ask-test [a]
   b <- ask
