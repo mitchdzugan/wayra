@@ -23,7 +23,7 @@
   ;; TODO this is a hack because monad representation in wayra currently
   ;; TODO a function of no arguments for performance reasons. This might
   ;; TODO be the thing that causes me to change that
-  #?(:clj clojure.lang.IFn :cljs js/Function)
+  #?(:clj clojure.lang.IFn :cljs function)
   (fmap [m f] (fn [] (impl/pure (f (impl/eval-m m)))))
 
   ;; TODO this is a hack because monad representation in wayra currently
