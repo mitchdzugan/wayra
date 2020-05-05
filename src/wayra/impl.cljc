@@ -1,13 +1,17 @@
-(ns wayra.impl)
+(ns wayra.impl
+  #?(:cljs (:require-macros
+            [wayra.impl :refer [pure]])))
 
 (def ^:dynamic *state* #?(:clj (atom {:s nil :r nil :e nil})
                           :cljs #js [nil nil nil]))
 
 (defn unwrap-f [mf]
   (loop [m mf]
-    (if (fn? m)
-      (recur (m))
-      m)))
+    (cond
+      #?(:clj (:e @*state*)
+         :cljs (aget *state* 2)) {:type :pure :val nil}
+      (fn? m) (recur (m))
+      :else m)))
 
 (defn eval-m [mf]
   #?(:cljs
@@ -66,8 +70,10 @@
 (defn raw-set [s]
   {:type :set :val s})
 
-(defn pure [x]
-  {:type :pure :val x})
+#?(:clj
+   (defmacro pure [x]
+     `(fn []
+        {:type :pure :val ~x})))
 
 (defn fail [err]
   {:type :error :err err})

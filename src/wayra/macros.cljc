@@ -1,34 +1,32 @@
 (ns wayra.macros
-  (:require [wayra.impl :refer [pure unwrap-f eval-m]])
+  (:require [wayra.preempt :refer [fpreempt]]
+            [wayra.impl :refer [pure unwrap-f eval-m]])
   #?(:cljs (:require-macros
             [wayra.macros :refer [letrec mdo fnm defnm defm whenm]])))
 
 
 #?(:clj
-   (defmacro letrec [bindings & body]
-     (let [bcnt (quot (count bindings) 2)
-           arrs (gensym "bindings_array")
-           arrv `(make-array Object ~bcnt)
-           bprs (partition 2 bindings)
-           bssl (map first bprs)
-           bsss (set bssl)
-           bexs (map second bprs)
-           arrm (zipmap bssl (range bcnt))
-           btes (map #(clojure.walk/prewalk (fn [f]
-                                              (if (bsss f)
-                                                `(aget ~arrs ~(arrm f))
-                                                f))
-                                            %)
-                     bexs)]
-       `(let [~arrs ~arrv]
-          ~@(map (fn [s e]
-                   `(aset ~arrs ~(arrm s) ~e))
-                 bssl
-                 btes)
-          (let [~@(mapcat (fn [s]
-                            [s `(aget ~arrs ~(arrm s))])
-                          bssl)]
-            ~@body)))))
+   (defmacro letrec [raw-bindings & body]
+     (let [bindings
+           (->> raw-bindings
+                (reduce (fn [{:keys [forms rec? rec-sym]} form]
+                          (cond
+                            (= '!rec form)
+                            {:forms forms :rec? true}
+
+                            rec?
+                            {:forms (conj forms form)
+                             :rec-sym form}
+
+                            rec-sym
+                            {:forms (conj forms `(fpreempt (fn [~rec-sym]
+                                                             ~form)))}
+
+                            :else
+                            {:forms (conj forms form)}))
+                        {:forms []})
+                :forms)]
+       `(let ~bindings ~@body))))
 
 #?(:clj
    (defmacro mdo [& statements]

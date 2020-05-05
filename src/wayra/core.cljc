@@ -4,20 +4,21 @@
    [wayra.macros :as macros]
    [wayra.functor :as functor]
    [wayra.monoid :as monoid])
-  #?(:cljs (:require-macros [wayra.core :refer [mdo defm defnm fnm whenm]])))
+  #?(:cljs
+     (:require-macros [wayra.core :refer [mdo defm defnm fnm whenm pure]])))
 
 #?(:clj (defmacro mdo [& args] `(macros/mdo ~@args)))
 #?(:clj (defmacro defm [& args] `(macros/defm ~@args)))
 #?(:clj (defmacro defnm [& args] `(macros/defnm ~@args)))
 #?(:clj (defmacro fnm [& args] `(macros/fnm ~@args)))
 #?(:clj (defmacro whenm [& args] `(macros/whenm ~@args)))
+#?(:clj (defmacro pure [& args] `(impl/pure ~@args)))
 (def mempty monoid/mempty)
 (def maplus monoid/maplus)
 (def mappend monoid/mappend)
 (defn <#> [root & fns] (reduce #(functor/fmap %1 %2) root fns))
 (defn >>= [root & fns] (reduce #(fn [] (%2 (impl/eval-m %1))) root fns))
 
-(def pure impl/pure)
 (def fail impl/fail)
 
 (def ask (<#> raw-get :reader))

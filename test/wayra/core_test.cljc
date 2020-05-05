@@ -53,8 +53,14 @@
 
 (defm letrec-fact
   r <- ask
-  let [fact (fn [n] (if (< n 2) 1 (* n (fact (dec n)))))]
+  let [fact (fn [& args])
+       !rec fact (fn [n] (if (< n 2) 1 (* n (fact (dec n)))))]
   (pure (fact r)))
+
+(def a (atom 0))
+(defm fail-stop
+  (fail "!")
+  [(swap! a inc)])
 
 (deftest core-api
   (testing "ask" (is (= (get-result 3 (ask-test 9)) 12)))
@@ -67,6 +73,9 @@
   (testing "tell" (is (= (get-writer (mdo (tell 1) (tell 2))) '(2 1))))
   (testing "no tell" (is (= (get-writer (put 1)) nil)))
   (testing "fail" (is (= (get-error (mdo (fail "x_x") (put 9))) "x_x")))
+  (testing "fail-stop"
+    (is (= (get-error fail-stop) "!"))
+    (is (= 0 @a)))
   (testing "fails" (is (= (get-state (mdo (fail "x_x") (put 9))) nil)))
   (testing "no fail" (is (= (get-error (put 1)) nil)))
   (testing "exec-in-m" (is (= (get-result 0 exec-in-m)
