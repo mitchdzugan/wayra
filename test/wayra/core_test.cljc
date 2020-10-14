@@ -2,7 +2,7 @@
   (:require [clojure.test
              :refer [deftest testing is]]
             [wayra.core
-             :refer [defnm defm fnm mapm eachm mdo preemptm tell ask
+             :refer [defnm defm fnm mapm reducem eachm mdo preemptm tell ask
                      asks get gets put exec modify maplus mappend pure
                      whenm fail local listen pass mempty <#>]]))
 
@@ -88,6 +88,12 @@
                                                     [curr])
                                                (range 5)))
                          '(2 4 8 16 32))))
+  (testing "reducem" (is (= (get-result 1 1 (reducem (fnm [acc id]
+                                                          (modify #(* 2 %1))
+                                                          curr <- get
+                                                          [(conj acc [id curr])])
+                                                     (range 5)))
+                            '([0 2] [1 4] [2 8] [3 16] [4 32]))))
   (testing "local"
     (is (= (get-writer 10 (mdo r1 <- ask
                                (tell r1)
