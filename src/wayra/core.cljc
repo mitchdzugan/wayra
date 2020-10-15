@@ -54,25 +54,26 @@
 
 (defn mapm [f s]
   (fn []
-    (if (empty? s) (pure '())
-        (pure (reverse
-               (loop [[x & xs] s
-                      acc nil]
-                 (if (nil? xs)
-                   (conj acc (impl/eval-m (f x)))
-                   (recur xs (conj acc (impl/eval-m (f x)))))))))))
+    (if (empty? s)
+      (pure '())
+      (pure (reverse
+             (loop [[x & xs] s
+                    acc nil]
+               (if (nil? xs)
+                 (conj acc (impl/eval-m (f x)))
+                 (recur xs (conj acc (impl/eval-m (f x)))))))))))
 
 (defn reducem
   ([r s] (reducem r nil s))
   ([r i s]
    (fn []
-     (if (empty? s) (pure '())
-         (pure (reverse
-                (loop [[x & xs] s
-                       acc i]
-                  (if (nil? xs)
-                    (impl/eval-m (r acc x))
-                    (recur xs (impl/eval-m (r acc x)))))))))))
+     (if (empty? s)
+       (pure i)
+       (pure (loop [[x & xs] s
+                    acc i]
+               (if (nil? xs)
+                 (impl/eval-m (r acc x))
+                 (recur xs (impl/eval-m (r acc x))))))))))
 
 (defn eachm [s f]
   (fn []

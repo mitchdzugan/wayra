@@ -93,7 +93,7 @@
                                                           curr <- get
                                                           [(conj acc [id curr])])
                                                      (range 5)))
-                            '([0 2] [1 4] [2 8] [3 16] [4 32]))))
+                            '([4 32] [3 16] [2 8] [1 4] [0 2]))))
   (testing "local"
     (is (= (get-writer 10 (mdo r1 <- ask
                                (tell r1)
