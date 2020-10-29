@@ -61,13 +61,13 @@
                                     (mdo ~@(drop 2 recd)))
                                  :await
                                  `(pure
-                                   (do (p/let [monad# (eval-m raw-get)
-                                               ~curr ~(nth recd 1)]
-                                         (raw-exec (mdo ~@(drop 2 recd))
-                                                   {:writer (:writer monad#)
-                                                    :reader (:reader monad#)
-                                                    :init-state (:state monad#)}))
-                                       nil))))
+                                   (let [monad# (eval-m raw-get)]
+                                     (p/let [~curr ~(nth recd 1)]
+                                       (raw-exec (mdo ~@(drop 2 recd))
+                                                 {:writer (:writer monad#)
+                                                  :reader (:reader monad#)
+                                                  :state (:state monad#)}))
+                                     nil))))
                          (conj statements curr)))
                      []
                      standard)]
