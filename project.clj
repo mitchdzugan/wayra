@@ -1,11 +1,12 @@
-(defproject wayra "0.0.29"
+(defproject wayra "0.0.30"
   :description "FIXME: write description"
   :url "https://github.com/mitchdzugan/wayra"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [org.clojure/clojurescript "1.10.597"
-                  :scope "provided"]]
+                  :scope "provided"]
+                 [funcool/promesa "5.1.0"]]
   :plugins [[lein-cljsbuild "1.1.7"]
             [lein-figwheel "0.5.19"]
             [cider/cider-nrepl "0.21.1"]

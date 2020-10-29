@@ -1,6 +1,7 @@
 (ns wayra.macros
   (:require [wayra.preempt :refer [fpreempt]]
-            [wayra.impl :refer [pure unwrap-f eval-m]])
+            [wayra.impl :refer [pure unwrap-f eval-m raw-get raw-exec]]
+            [promesa.core :as p])
   #?(:cljs (:require-macros
             [wayra.macros :refer [letrec mdo fnm defnm defm whenm]])))
 
@@ -58,6 +59,14 @@
                        [arrow monad & other-statements] statements]
                    (cond
                      (nil? statements) curr
+                     (= arrow (symbol '<-await-)) `(pure
+                                                    (do (p/let [monad# (eval-m raw-get)
+                                                                ~curr ~monad]
+                                                          (raw-exec ~(make-fdo other-statements)
+                                                                    {:writer (:writer monad#)
+                                                                     :reader (:reader monad#)
+                                                                     :init-state (:state monad#)}))
+                                                        nil))
                      (= arrow (symbol '<-)) `(let [~curr (eval-m ~monad)]
                                                ~(make-fdo other-statements))
                      (vector? curr) `(letrec ~curr ~(make-fdo statements))
