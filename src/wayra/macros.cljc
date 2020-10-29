@@ -40,39 +40,48 @@
                            statements
                            (concat [nil] statements)
                            (concat (drop 1 statements) [nil]))
-           [standard guarded] (split-with #(not (= % '-->)) statements)
+           [standard recd] (split-with #(not (or (= %1 '-->)
+                                                 (= %1 '<-await-)))
+                                       statements)
            standard (remove #(= 'let %) standard)
-           needs-guard? (> (count guarded) 1)
-           guard-point (-> standard count dec)
-           with-guard (reduce
-                       (fn [statements curr]
-                         (if (and (= (count statements) guard-point) needs-guard?)
-                           (conj statements
+           needs-rec? (> (count recd) 1)
+           rec-point (-> standard count dec)
+           rec-type (if (= '--> (first recd))
+                      :guard
+                      :await)
+           with-rec (reduce
+                     (fn [statements curr]
+                       (if (and (= (count statements) rec-point)
+                                needs-rec?)
+                         (conj statements
+                               (case rec-type
+                                 :guard
                                  `(if ~curr
-                                    ~(nth guarded 1)
-                                    (mdo ~@(drop 2 guarded))))
-                           (conj statements curr)))
-                       []
-                       standard)]
+                                    ~(nth recd 1)
+                                    (mdo ~@(drop 2 recd)))
+                                 :await
+                                 `(pure
+                                   (do (p/let [monad# (eval-m raw-get)
+                                               ~curr ~(nth recd 1)]
+                                         (raw-exec (mdo ~@(drop 2 recd))
+                                                   {:writer (:writer monad#)
+                                                    :reader (:reader monad#)
+                                                    :init-state (:state monad#)}))
+                                       nil))))
+                         (conj statements curr)))
+                     []
+                     standard)]
        (letfn [(make-fdo [statements]
                  (let [[curr & statements] statements
                        [arrow monad & other-statements] statements]
                    (cond
                      (nil? statements) curr
-                     (= arrow (symbol '<-await-)) `(pure
-                                                    (do (p/let [monad# (eval-m raw-get)
-                                                                ~curr ~monad]
-                                                          (raw-exec (mdo ~@other-statements)
-                                                                    {:writer (:writer monad#)
-                                                                     :reader (:reader monad#)
-                                                                     :init-state (:state monad#)}))
-                                                        nil))
                      (= arrow (symbol '<-)) `(let [~curr (eval-m ~monad)]
                                                ~(make-fdo other-statements))
                      (vector? curr) `(letrec ~curr ~(make-fdo statements))
                      :else `(do (eval-m ~curr)
                                 ~(make-fdo statements)))))]
-         `(fn [] ~(make-fdo with-guard))))))
+         `(fn [] ~(make-fdo with-rec))))))
 
 (defn add-fdo [sym]
   (fn [& statements]
