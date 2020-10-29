@@ -62,7 +62,7 @@
                      (= arrow (symbol '<-await-)) `(pure
                                                     (do (p/let [monad# (eval-m raw-get)
                                                                 ~curr ~monad]
-                                                          (raw-exec ~(make-fdo other-statements)
+                                                          (raw-exec (mdo ~@other-statements)
                                                                     {:writer (:writer monad#)
                                                                      :reader (:reader monad#)
                                                                      :init-state (:state monad#)}))
