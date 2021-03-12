@@ -8,7 +8,7 @@
 ```
 
 **wayra** [wajɾa] *(Quechuan)* • noun
-> air
+> wind
 
 ## Usage
 
